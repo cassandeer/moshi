@@ -1,0 +1,22 @@
+services:
+  moshi-rust:
+    build:
+      context: ./rust
+      dockerfile: Dockerfile
+    container_name: moshi-delayed-streams-rust
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - RUST_LOG=info
+    volumes:
+      - ./models:/models
+      - ./rust/configs:/configs
+      - ./rust:/app/rust
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all # ou spécifiez device_ids: ["0"] pour un GPU précis
+              capabilities: [gpu]
