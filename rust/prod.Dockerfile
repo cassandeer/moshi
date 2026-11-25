@@ -1,4 +1,3 @@
-# --- Étape 1 : Compilation ---
 FROM nvidia/cuda:12.4.1-devel-ubuntu22.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -20,7 +19,6 @@ COPY rust/ .
 RUN cargo build --release --bin moshi-server --features cuda
 
 
-# --- Étape 2 : Runtime de production ---
 FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -33,8 +31,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /app/rust/target/release/moshi-server /usr/local/bin/moshi-server
 COPY rust/ /app/rust/
 
-ENV HF_HOME=/data/hf-cache
-VOLUME ["/data/hf-cache"]
+RUN mkdir /configs
+COPY ./configs/stt-1b-en_fr.toml /configs/stt-1b-en_fr.toml
+COPY ./entrypoint.sh /entrypoint.sh
 
-ENTRYPOINT ["moshi-server"]
-CMD ["--help"]
+RUN chmod 755 /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
