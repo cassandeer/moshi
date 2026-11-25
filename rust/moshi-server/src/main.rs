@@ -423,22 +423,42 @@ struct AppStateInner {
 type AppState = Arc<AppStateInner>;
 
 impl AppStateInner {
-    fn new(args: &WorkerArgs, config: Config) -> Result<Self> {
+    fn new(args: &WorkerArgs, mut config: Config) -> Result<Self> {
         let device = device(args.cpu)?;
 
-        // The following does not have a significant impact as soon as batch sizes are
-        // large enough so we don't activate it for now.
-        // #[cfg(feature = "cuda")]
-        // if let candle::Device::Cuda(d) = &device {
-        //     unsafe {
-        //         d.disable_event_tracking();
-        //     }
-        // };
-
         let mut modules = Vec::with_capacity(config.modules.len());
-        for (_, module_cfg) in config.modules.iter() {
-            let m = Module::new(module_cfg, &config, &device)?;
-            modules.push(m)
+        for (name, mut module_cfg) in config.modules.into_iter() {
+            if let ModuleConfig::BatchedAsr {
+                path,
+                config: asr_cfg,
+                batch_size,
+            } = &mut module_cfg
+            {
+                if let Ok(val) = std::env::var("MOSHI_ASR_PATH") {
+                    *path = val;
+                }
+                if let Ok(val) = std::env::var("MOSHI_ASR_BATCH_SIZE") {
+                    match val.parse::<usize>() {
+                        Ok(bs) => *batch_size = bs,
+                        Err(_) => {
+                            eprintln!("Attention : MOSHI_ASR_BATCH_SIZE invalide ('{val}') pour {name}")
+                        }
+                    }
+                }
+                if let Ok(val) = std::env::var("MOSHI_LM_MODEL_FILE") {
+                    asr_cfg.lm_model_file = val;
+                }
+                if let Ok(val) = std::env::var("MOSHI_TEXT_TOKENIZER_FILE") {
+                    asr_cfg.text_tokenizer_file = val;
+                }
+                if let Ok(val) = std::env::var("MOSHI_AUDIO_TOKENIZER_FILE") {
+                    asr_cfg.audio_tokenizer_file = val;
+                }
+            }
+
+            println!("chargement du module : {name}, cfg = {module_cfg:?}");
+            let m = Module::new(&module_cfg, &config, &device)?;
+            modules.push(m);
         }
         Ok(Self { modules })
     }
