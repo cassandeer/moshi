@@ -459,9 +459,9 @@ impl AppStateInner {
         // 2. Instanciation des modules (config n'est plus emprunté mutablement)
         let mut modules = Vec::with_capacity(config.modules.len());
         for (name, module_cfg) in config.modules.iter() {
-            println!("chargement du module : {name}, cfg = {module_cfg:?}");
+            println!("Loaded config file : {name}, cfg = {module_cfg:?}");
             let m = Module::new(module_cfg, &config, &device)?;
-            modules.push(m);
+            modules.push(m)
         }
 
         Ok(Self { modules })
