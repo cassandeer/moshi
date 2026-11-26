@@ -1,18 +1,21 @@
 services:
   moshi-rust:
     build:
-      context: ./rust
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: rust/prod.Dockerfile
     container_name: moshi-delayed-streams-rust
     restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
       - RUST_LOG=info
+      - MOSHI_ASR_PATH=/v1/realtime
+      - MOSHI_ASR_BATCH_SIZE=16
+      - MOSHI_LM_MODEL_FILE=/models/stt-1b-en_fr-candle/model.safetensors
+      - MOSHI_TEXT_TOKENIZER_FILE=/models/stt-1b-en_fr-candle/tokenizer_en_fr_audio_8000.model
+      - MOSHI_AUDIO_TOKENIZER_FILE=/models/stt-1b-en_fr-candle/mimi-pytorch-e351c8d8@125.safetensors
     volumes:
       - ./models:/models
-      - ./rust/configs:/configs
-      - ./rust:/app/rust
     deploy:
       resources:
         reservations:

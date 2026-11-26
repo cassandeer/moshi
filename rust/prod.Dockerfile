@@ -26,14 +26,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libssl3 \
     python3 \
+    libpython3.10 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/rust/target/release/moshi-server /usr/local/bin/moshi-server
 COPY rust/ /app/rust/
 
 RUN mkdir /configs
-COPY ./configs/stt-1b-en_fr.toml /configs/stt-1b-en_fr.toml
-COPY ./entrypoint.sh /entrypoint.sh
+COPY ./rust/configs/stt-1b-en_fr.toml /configs/stt-1b-en_fr.toml
+COPY ./rust/prod.entrypoint.sh /entrypoint.sh
 
 RUN chmod 755 /entrypoint.sh
 
