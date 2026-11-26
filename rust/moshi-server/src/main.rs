@@ -426,13 +426,12 @@ impl AppStateInner {
     fn new(args: &WorkerArgs, mut config: Config) -> Result<Self> {
         let device = device(args.cpu)?;
 
-        let mut modules = Vec::with_capacity(config.modules.len());
-        for (name, mut module_cfg) in config.modules.into_iter() {
+        for (name, module_cfg) in config.modules.iter_mut() {
             if let ModuleConfig::BatchedAsr {
                 path,
                 config: asr_cfg,
                 batch_size,
-            } = &mut module_cfg
+            } = module_cfg
             {
                 if let Ok(val) = std::env::var("MOSHI_ASR_PATH") {
                     *path = val;
@@ -455,11 +454,16 @@ impl AppStateInner {
                     asr_cfg.audio_tokenizer_file = val;
                 }
             }
+        }
 
+        // 2. Instanciation des modules (config n'est plus emprunté mutablement)
+        let mut modules = Vec::with_capacity(config.modules.len());
+        for (name, module_cfg) in config.modules.iter() {
             println!("chargement du module : {name}, cfg = {module_cfg:?}");
-            let m = Module::new(&module_cfg, &config, &device)?;
+            let m = Module::new(module_cfg, &config, &device)?;
             modules.push(m);
         }
+
         Ok(Self { modules })
     }
 }
